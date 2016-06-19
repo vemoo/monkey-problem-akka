@@ -4,11 +4,11 @@ import akka.actor.Actor
 
 object Monkey {
 
-  sealed trait MonkeyMsg
+  sealed trait Command
 
-  case object Go extends MonkeyMsg
+  case object Go extends Command
 
-  case object Wait extends MonkeyMsg
+  case object Wait extends Command
 
 }
 
