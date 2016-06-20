@@ -16,8 +16,6 @@ class MonkeySpec extends TestKit(ActorSystem("MonkeySpec"))
     system.terminate()
   }
 
-  val timeThres = 100.milliseconds
-
   test("monkey shouldn't cross until told to") {
     val rope = TestProbe()
     val monkey = system.actorOf(Monkey.props(West, rope.ref))
@@ -35,7 +33,9 @@ class MonkeySpec extends TestKit(ActorSystem("MonkeySpec"))
     rope.expectMsg(Join(_))
     rope.send(monkey, Go)
     rope.expectMsg(Joining)
-    rope.expectMsg(1.second + timeThres, Joined)
-    rope.expectMsg(4.second + timeThres, Left)
+    rope.expectNoMsg(1.second)
+    rope.expectMsg(Joined)
+    rope.expectNoMsg(4.second)
+    rope.expectMsg(Left)
   }
 }
