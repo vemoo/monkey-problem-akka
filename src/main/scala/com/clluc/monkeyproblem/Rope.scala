@@ -1,6 +1,6 @@
 package com.clluc.monkeyproblem
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorRef}
 
 sealed trait Direction
 
@@ -35,5 +35,46 @@ object Rope {
 }
 
 class Rope extends Actor {
-  override def receive: Receive = ???
+
+  import com.clluc.monkeyproblem.Monkey.{Go, Wait}
+  import com.clluc.monkeyproblem.Rope._
+
+  import scala.collection.immutable.Queue
+
+  var direction: Option[Direction] = None
+
+  var waiting: Queue[(ActorRef, Direction)] = Queue.empty
+
+  var crossing: Set[ActorRef] = Set.empty
+
+  override def receive: Receive = {
+    case Join(dir) => direction match {
+      case None =>
+        direction = Some(dir)
+        crossing += sender
+        sender ! Go
+      case Some(_) =>
+        waiting = waiting.enqueue((sender, dir))
+        sender ! Wait
+    }
+    case Joining => ()
+    case Joined => waiting.dequeueOption match {
+      case Some(((actorRef, dir), newWaiting)) if dir == direction.get =>
+        actorRef ! Go
+        crossing += actorRef
+        waiting = newWaiting
+      case _ => ()
+    }
+    case Left =>
+      crossing -= sender
+      waiting.dequeueOption match {
+        case Some(((actorRef, dir), newWaiting)) =>
+          direction = Some(dir)
+          actorRef ! Go
+          crossing += actorRef
+          waiting = newWaiting
+        case _ =>
+          direction = None
+      }
+  }
 }
