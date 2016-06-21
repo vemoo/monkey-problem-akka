@@ -17,5 +17,27 @@ object Monkey {
 }
 
 class Monkey(val direction: Direction, val rope: ActorRef) extends Actor {
-  override def receive: Receive = ???
+
+  import context.dispatcher
+  import com.clluc.monkeyproblem.Monkey._
+  import scala.concurrent.duration._
+
+  override def preStart: Unit = {
+    rope ! Rope.Join(direction)
+  }
+
+  override def receive: Receive = {
+    case Wait => ()
+    case Go =>
+      rope ! Rope.Joining
+      //remind ourselves to tell rope we joined
+      context.system.scheduler.scheduleOnce(1.second, self, Rope.Joined)
+    case Rope.Joined =>
+      rope ! Rope.Joined
+      //remind ourselves to tell rope we left
+      context.system.scheduler.scheduleOnce(4.seconds, self, Rope.Left)
+    case Rope.Left =>
+      rope ! Rope.Left
+      context.stop(self)
+  }
 }
