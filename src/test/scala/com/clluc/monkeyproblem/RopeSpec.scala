@@ -50,7 +50,7 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
     monkey1.send(rope, Joined)
 
     monkey2.send(rope, Join(East))
-    monkey2.expectNoMsg(300.milliseconds)
+    monkey2.expectMsg(Wait)
   }
 
   test("avoid starvation") {
