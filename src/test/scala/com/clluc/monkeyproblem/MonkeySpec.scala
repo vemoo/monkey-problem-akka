@@ -18,7 +18,7 @@ class MonkeySpec extends TestKit(ActorSystem("MonkeySpec"))
 
   test("monkey shouldn't cross until told to") {
     val rope = TestProbe()
-    val monkey = system.actorOf(Monkey.props(West, rope.ref))
+    val monkey = system.actorOf(Monkey.props(0, West, rope.ref))
     rope.expectMsgPF() {
       case Join(_) => ()
     }
@@ -32,7 +32,7 @@ class MonkeySpec extends TestKit(ActorSystem("MonkeySpec"))
   test("monkey shold take 1 second to get on the rope, and 4 crossing") {
 
     val rope = TestProbe()
-    val monkey = system.actorOf(Monkey.props(West, rope.ref))
+    val monkey = system.actorOf(Monkey.props(0, West, rope.ref))
     rope.expectMsgPF() {
       case Join(_) => ()
     }
