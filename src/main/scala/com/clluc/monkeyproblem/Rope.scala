@@ -53,41 +53,47 @@ class Rope extends Actor {
     */
   var beingClimbed = false
 
+
+  /**
+    * tells the actor to go and makes the appropiate state changes
+    *
+    * @param ref actor that can join the rope
+    */
+  def tellGo(ref: ActorRef): Unit = {
+    crossing += ref
+    ref ! Go
+    beingClimbed = true
+  }
+
   override def receive: Receive = {
-    case Join(dir) => direction match {
-      case None =>
-        direction = Some(dir)
-        crossing += sender
-        sender ! Go
-        beingClimbed = true
-      case Some(curDir) =>
-        if (waiting.isEmpty && dir == curDir && !beingClimbed) {
-          crossing += sender
-          sender ! Go
-          beingClimbed = true
-        }
-        else {
-          waiting = waiting.enqueue((sender, dir))
-          sender ! Wait
-        }
-    }
+    case Join(dir) =>
+      direction match {
+        case None =>
+          direction = Some(dir)
+          tellGo(sender)
+        case Some(curDir) =>
+          if (waiting.isEmpty && dir == curDir && !beingClimbed) {
+            tellGo(sender)
+          } else {
+            waiting = waiting.enqueue((sender, dir))
+            sender ! Wait
+          }
+      }
     case Joining => ()
     case Joined =>
       beingClimbed = false
       waiting.dequeueOption match {
-      case Some(((actorRef, dir), newWaiting)) if dir == direction.get =>
-        actorRef ! Go
-        crossing += actorRef
-        waiting = newWaiting
-      case _ => ()
-    }
+        case Some(((actorRef, dir), newWaiting)) if dir == direction.get =>
+          tellGo(actorRef)
+          waiting = newWaiting
+        case _ => ()
+      }
     case Left =>
       crossing -= sender
       waiting.dequeueOption match {
         case Some(((actorRef, dir), newWaiting)) =>
           direction = Some(dir)
-          actorRef ! Go
-          crossing += actorRef
+          tellGo(actorRef)
           waiting = newWaiting
         case _ =>
           direction = None
