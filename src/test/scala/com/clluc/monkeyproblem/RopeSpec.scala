@@ -31,6 +31,7 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
 
     monkey1.send(rope, Join(West))
     monkey1.expectMsg(Go)
+    monkey1.send(rope, Joining)
 
     monkey2.send(rope, Join(West))
     monkey2.expectMsg(Wait)
@@ -47,6 +48,7 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
 
     monkey1.send(rope, Join(West))
     monkey1.expectMsg(Go)
+    monkey1.send(rope, Joining)
     monkey1.send(rope, Joined)
 
     monkey2.send(rope, Join(East))
@@ -75,7 +77,7 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
     monkey3.send(rope, Joined)
   }
 
-  test("2 monkeys on same dir, one lefts, next on opposite direction should wait"){
+  test("2 monkeys on same dir, one lefts, next on opposite direction should wait") {
     val monkey1 = TestProbe()
     val monkey2 = TestProbe()
     val monkey3 = TestProbe()
@@ -105,6 +107,7 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
 
     monkey1.send(rope, Join(West))
     monkey1.expectMsg(Go)
+    monkey1.send(rope, Joining)
     monkey1.send(rope, Joined)
 
     monkey2.send(rope, Join(East))
@@ -116,11 +119,40 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
     monkey1.send(rope, Left)
 
     monkey2.expectMsg(Go)
+    monkey2.send(rope, Joining)
     monkey2.send(rope, Joined)
 
     monkey3.expectNoMsg(300.milliseconds)
 
     monkey2.send(rope, Left)
+
+    monkey3.expectMsg(Go)
+  }
+
+  test("keep track of joining monkey that joined after another monkey left") {
+    val monkey1 = TestProbe()
+    val monkey2 = TestProbe()
+    val monkey3 = TestProbe()
+
+    val rope = system.actorOf(Props[Rope])
+
+    monkey1.send(rope, Join(West))
+    monkey1.expectMsg(Go)
+    monkey1.send(rope, Joining)
+    monkey1.send(rope, Joined)
+
+    monkey2.send(rope, Join(East))
+    monkey2.expectMsg(Wait)
+
+    monkey1.send(rope, Left)
+
+    monkey2.expectMsg(Go)
+    monkey2.send(rope, Joining)
+    //rope should know that monkey2 is still getting on the rope
+    monkey3.send(rope, Join(East))
+    monkey3.expectMsg(Wait)
+
+    monkey2.send(rope, Joined)
 
     monkey3.expectMsg(Go)
   }

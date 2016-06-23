@@ -101,7 +101,8 @@ class Rope extends Actor {
               state.copy(
                 direction = Some(dir),
                 crossing = newCrossing + actorRef,
-                waiting = newWaiting
+                waiting = newWaiting,
+                beingClimbed = true
               )
             case _ =>
               state.copy(
