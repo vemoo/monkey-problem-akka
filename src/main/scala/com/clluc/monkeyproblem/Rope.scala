@@ -47,18 +47,34 @@ class Rope extends Actor {
 
   var crossing: Set[ActorRef] = Set.empty
 
+  /**
+    * Indicates that someone is getting on to the rope
+    * but hasn't started crossing yet
+    */
+  var beingClimbed = false
+
   override def receive: Receive = {
     case Join(dir) => direction match {
       case None =>
         direction = Some(dir)
         crossing += sender
         sender ! Go
-      case Some(_) =>
-        waiting = waiting.enqueue((sender, dir))
-        sender ! Wait
+        beingClimbed = true
+      case Some(curDir) =>
+        if (waiting.isEmpty && dir == curDir && !beingClimbed) {
+          crossing += sender
+          sender ! Go
+          beingClimbed = true
+        }
+        else {
+          waiting = waiting.enqueue((sender, dir))
+          sender ! Wait
+        }
     }
     case Joining => ()
-    case Joined => waiting.dequeueOption match {
+    case Joined =>
+      beingClimbed = false
+      waiting.dequeueOption match {
       case Some(((actorRef, dir), newWaiting)) if dir == direction.get =>
         actorRef ! Go
         crossing += actorRef

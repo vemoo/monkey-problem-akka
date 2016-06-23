@@ -53,6 +53,28 @@ class RopeSpec extends TestKit(ActorSystem("RopeSpec"))
     monkey2.expectMsg(Wait)
   }
 
+  test("3 monkeys on same direction go one after the other") {
+    val monkey1 = TestProbe()
+    val monkey2 = TestProbe()
+    val monkey3 = TestProbe()
+    val rope = system.actorOf(Props[Rope])
+
+    monkey1.send(rope, Join(East))
+    monkey1.expectMsg(Go)
+    monkey1.send(rope, Joining)
+    monkey1.send(rope, Joined)
+
+    monkey2.send(rope, Join(East))
+    monkey2.expectMsg(Go)
+    monkey2.send(rope, Joining)
+    monkey2.send(rope, Joined)
+
+    monkey3.send(rope, Join(East))
+    monkey3.expectMsg(Go)
+    monkey3.send(rope, Joining)
+    monkey3.send(rope, Joined)
+  }
+
   test("avoid starvation") {
     val monkey1 = TestProbe()
     val monkey2 = TestProbe()
