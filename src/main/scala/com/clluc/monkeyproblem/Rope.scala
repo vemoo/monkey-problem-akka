@@ -36,14 +36,12 @@ object Rope {
 
 }
 
-
 case class RopeState(direction: Option[Direction], waiting: Queue[(ActorRef, Direction)], crossing: Set[ActorRef], beingClimbed: Boolean)
 
 class Rope extends Actor {
 
   import com.clluc.monkeyproblem.Monkey.{Go, Wait}
   import com.clluc.monkeyproblem.Rope._
-
   import scala.collection.immutable.Queue
 
   var state = RopeState(None, Queue.empty, Set.empty, false)
@@ -110,8 +108,7 @@ class Rope extends Actor {
                 crossing = newCrossing
               )
           }
-        }
-        else {
+        } else {
           state.copy(
             crossing = newCrossing
           )

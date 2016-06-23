@@ -2,7 +2,6 @@ package com.clluc.monkeyproblem
 
 import akka.actor.{ActorSystem, Props}
 import com.clluc.monkeyproblem.MonkeyGenerator.GenerateMonkeys
-
 import scala.io.StdIn.readLine
 
 
@@ -17,7 +16,7 @@ object ApplicationMain extends App {
 
     println("press enter to end program")
 
-    readLine
+    readLine()
     system.terminate()
   }
 }

@@ -3,7 +3,6 @@ package com.clluc.monkeyproblem
 import akka.actor.{Actor, ActorRef, Props}
 import com.clluc.monkeyproblem.MonkeyGenerator.GenerateMonkeys
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.util.Random
 import scala.concurrent.duration._
 

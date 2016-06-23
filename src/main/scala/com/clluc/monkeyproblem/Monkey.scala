@@ -13,6 +13,7 @@ object Monkey {
 
   case object Wait extends Command
 
+
   def props(id: Int, direction: Direction, rope: ActorRef): Props = Props(new Monkey(id, direction, rope))
 }
 
@@ -20,7 +21,6 @@ class Monkey(val id: Int, val direction: Direction, val rope: ActorRef) extends 
 
   import com.clluc.monkeyproblem.Monkey._
   import context.dispatcher
-
   import scala.concurrent.duration._
 
   override def preStart: Unit = {
