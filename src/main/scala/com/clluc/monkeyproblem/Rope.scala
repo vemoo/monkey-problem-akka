@@ -2,6 +2,8 @@ package com.clluc.monkeyproblem
 
 import akka.actor.{Actor, ActorRef}
 
+import scala.collection.immutable.Queue
+
 sealed trait Direction
 
 case object East extends Direction
@@ -34,6 +36,9 @@ object Rope {
 
 }
 
+
+case class RopeState(direction: Option[Direction], waiting: Queue[(ActorRef, Direction)], crossing: Set[ActorRef], beingClimbed: Boolean)
+
 class Rope extends Actor {
 
   import com.clluc.monkeyproblem.Monkey.{Go, Wait}
@@ -41,62 +46,75 @@ class Rope extends Actor {
 
   import scala.collection.immutable.Queue
 
-  var direction: Option[Direction] = None
-
-  var waiting: Queue[(ActorRef, Direction)] = Queue.empty
-
-  var crossing: Set[ActorRef] = Set.empty
-
-  /**
-    * Indicates that someone is getting on to the rope
-    * but hasn't started crossing yet
-    */
-  var beingClimbed = false
-
-
-  /**
-    * tells the actor to go and makes the appropiate state changes
-    *
-    * @param ref actor that can join the rope
-    */
-  def tellGo(ref: ActorRef): Unit = {
-    crossing += ref
-    ref ! Go
-    beingClimbed = true
-  }
+  var state = RopeState(None, Queue.empty, Set.empty, false)
 
   override def receive: Receive = {
     case Join(dir) =>
-      direction match {
-        case None =>
-          direction = Some(dir)
-          tellGo(sender)
-        case Some(curDir) =>
-          if (waiting.isEmpty && dir == curDir && !beingClimbed) {
-            tellGo(sender)
-          } else {
-            waiting = waiting.enqueue((sender, dir))
-            sender ! Wait
-          }
+      state = {
+        state.direction match {
+          case None =>
+            sender ! Go
+            state.copy(
+              direction = Some(dir),
+              crossing = state.crossing + sender,
+              beingClimbed = true
+            )
+          case Some(curDir) =>
+            if (state.waiting.isEmpty && dir == curDir && !state.beingClimbed) {
+              sender ! Go
+              state.copy(
+                crossing = state.crossing + sender,
+                beingClimbed = true
+              )
+            } else {
+              sender ! Wait
+              state.copy(
+                waiting = state.waiting.enqueue((sender, dir))
+              )
+            }
+        }
       }
     case Joining => ()
     case Joined =>
-      beingClimbed = false
-      waiting.dequeueOption match {
-        case Some(((actorRef, dir), newWaiting)) if dir == direction.get =>
-          tellGo(actorRef)
-          waiting = newWaiting
-        case _ => ()
+      state = {
+        state.waiting.dequeueOption match {
+          case Some(((actorRef, dir), newWaiting)) if dir == state.direction.get =>
+            actorRef ! Go
+            state.copy(
+              crossing = state.crossing + actorRef,
+              beingClimbed = true,
+              waiting = newWaiting
+            )
+          case _ =>
+            state.copy(
+              beingClimbed = false
+            )
+        }
       }
     case Left =>
-      crossing -= sender
-      waiting.dequeueOption match {
-        case Some(((actorRef, dir), newWaiting)) =>
-          direction = Some(dir)
-          tellGo(actorRef)
-          waiting = newWaiting
-        case _ =>
-          direction = None
+      val newCrossing = state.crossing - sender
+      state = {
+        if (newCrossing.isEmpty) {
+          state.waiting.dequeueOption match {
+            case Some(((actorRef, dir), newWaiting)) =>
+              actorRef ! Go
+              state.copy(
+                direction = Some(dir),
+                crossing = newCrossing + actorRef,
+                waiting = newWaiting
+              )
+            case _ =>
+              state.copy(
+                direction = None,
+                crossing = newCrossing
+              )
+          }
+        }
+        else {
+          state.copy(
+            crossing = newCrossing
+          )
+        }
       }
   }
 }
